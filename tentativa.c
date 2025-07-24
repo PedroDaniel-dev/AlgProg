@@ -1,290 +1,491 @@
 #include <stdio.h>
 #include <string.h>
-#include <ctype.h>
-#include <stdlib.h>
-
 #define MAX_CLIENTES 1000
 #define TAM_NOME 101
 #define TAM_CPF 15
 #define TAM_DATA 11
-#define TAM_TEL 16
+#define TAM_TEL 15
 #define TAM_EMAIL 51
-#define DDD_PADRAO "(21)"
 
-typedef struct {
+void exibirCliente();
+
+
+struct cliente {
     char nome[TAM_NOME];
+    char dataNascimento[TAM_DATA];
+    char numTelefone[TAM_TEL];
     char cpf[TAM_CPF];
-    char nascimento[TAM_DATA];
-    char telefone[TAM_TEL];
     char email[TAM_EMAIL];
-} Cliente;
+};
 
-// Funções de validação
-int validar_nome(const char *nome) {
-    int len = strlen(nome);
-    int tem_espaco = 0;
-    if (len < 4 || len >= TAM_NOME) return 0;
-    for (int i = 0; i < len; i++) {
-        char c = nome[i];
-        if (!isalpha(c) && c != ' ' && c != '-' && c != '\'') return 0;
-        if (c == ' ') tem_espaco = 1;
-    }
-    return tem_espaco;
+const char *nomesMeses[] = {
+    "", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+};
+
+void validarNome() {
+    //int len = strlen(nome);
+    //if (len < 4);
+    
 }
 
-int validar_cpf(const char *cpf) {
-    if (strlen(cpf) != 14) return 0;
-    if (cpf[3] != '.' || cpf[7] != '.' || cpf[11] != '-') return 0;
-    for (int i = 0; i < 14; i++) {
-        if (i == 3 || i == 7 || i == 11) continue;
-        if (!isdigit(cpf[i])) return 0;
-    }
-    // Validação dos dígitos verificadores omitida por brevidade
-    return 1;
-}
-
-int validar_data(const char *data) {
-    if (strlen(data) != 10 || data[2] != '/' || data[5] != '/') return 0;
-    int d, m, a;
-    if (sscanf(data, "%d/%d/%d", &d, &m, &a) != 3) return 0;
-    if (a < 1900 || a > 2100 || m < 1 || m > 12 || d < 1 || d > 31) return 0;
-    int maxDias[] = {0,31,28,31,30,31,30,31,31,30,31,30,31};
-    if (d > maxDias[m]) {
-        if (m == 2 && d == 29 && ((a % 4 == 0 && a % 100 != 0) || a % 400 == 0)) return 1;
-        return 0;
-    }
-    return 1;
-}
-
-int validar_email(const char *email) {
-    int len = strlen(email);
-    if (len < 5 || len >= TAM_EMAIL) return 0;
-    char *at = strchr(email, '@');
-    if (!at || at == email || at == email + len - 1) return 0;
-    char *dominio = at + 1;
-    if (!strchr(dominio, '.')) return 0;
-    for (int i = 0; i < len; i++) {
-        char c = email[i];
-        if (c == '@') continue;
-        if (!islower(c) && !isdigit(c) && c != '-' && c != '.') return 0;
-    }
-    if (email[0] == '-' || email[len-1] == '-') return 0;
-    return 1;
-}
-
-int validar_ddd(const char *ddd) {
-    int d1 = ddd[1] - '0', d2 = ddd[2] - '0';
-    int ddd_num = d1 * 10 + d2;
-    int ddds_validos[] = {11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 24, 27, 28, 31, 32, 33, 34, 35, 37, 38,
-    41, 42, 43, 44, 45, 46, 47, 48, 49, 51, 53, 54, 55, 61, 62, 63, 64, 65, 66, 67, 68,
-    69, 71, 73, 74, 75, 77, 79, 81, 87, 82, 83, 84, 85, 88, 86, 89, 91, 92, 93, 94, 95,
-    96, 97,98, 99};
-    for (int i = 0; i < 9; i++) if (ddd_num == ddds_validos[i]) return 1;
-    return 0;
-}
-
-int formatar_telefone(const char *orig, char *saida) {
-    int len = strlen(orig);
-    char clean[TAM_TEL];
+void validarCPF(char cpf[]) {
+    int array[11];
     int j = 0;
-    for (int i = 0; i < len; i++) if (isdigit(orig[i])) clean[j++] = orig[i];
-    clean[j] = '\0';
 
-    if (orig[0] == '(' && orig[3] == ')' && orig[4] == ' ') {
-        if (!validar_ddd(orig)) return 0;
-        if (len < 14 || len > 15 || orig[len-5] != '-') return 0;
-        strncpy(saida, orig, TAM_TEL-1);
-        saida[TAM_TEL-1] = '\0';
-        return 1;
-    } else {
-        if (j == 8) {
-            snprintf(saida, TAM_TEL, "%s %c%c%c%c-%c%c%c%c", DDD_PADRAO,
-                clean[0], clean[1], clean[2], clean[3], clean[4], clean[5], clean[6], clean[7]);
-            return 1;
-        } else if (j == 9 && clean[0] == '9') {
-            snprintf(saida, TAM_TEL, "%s %c%c%c%c%c-%c%c%c%c", DDD_PADRAO,
-                clean[0], clean[1], clean[2], clean[3], clean[4], clean[5], clean[6], clean[7], clean[8]);
-            return 1;
+    // Transforma os caracteres em dígitos, ignorando pontos/hífens
+    for (int i = 0; cpf[i] != '\0' && j < 11; i++) {
+        if (cpf[i] >= '0' && cpf[i] <= '9') {
+            array[j++] = cpf[i] - '0';
         }
     }
-    return 0;
-}
 
-// Função para limpar buffer
-void limpar_buffer() {
-    int c;
-    while ((c = getchar()) != '\n' && c != EOF);
-}
-
-// Busca cliente por CPF
-int buscar_cliente(Cliente *clientes, int total, const char *cpf) {
-    for (int i = 0; i < total; i++)
-        if (strcmp(clientes[i].cpf, cpf) == 0) return i;
-    return -1;
-}
-
-// Cadastro de cliente
-void cadastrar_cliente(Cliente *clientes, int *total) {
-    if (*total >= MAX_CLIENTES) {
-        printf("Limite de clientes atingido.\n");
+    if (j != 11) {
+        printf("CPF inválido!\n");
         return;
     }
-    char cpf[TAM_CPF];
-    do {
-        printf("CPF (xxx.xxx.xxx-yy): ");
-        fgets(cpf, TAM_CPF, stdin);
-        cpf[strcspn(cpf, "\n")] = '\0';
-        if (!validar_cpf(cpf)) printf("CPF inválido. Tente novamente.\n");
-    } while (!validar_cpf(cpf));
 
-    int idx = buscar_cliente(clientes, *total, cpf);
-    if (idx >= 0) {
-        char resp[4];
-        printf("CPF já cadastrado. Atualizar dados? (s/n): ");
-        fgets(resp, sizeof(resp), stdin);
-        if (tolower(resp[0]) != 's') {
-            printf("Operação cancelada.\n");
+    int soma = 0;
+    int peso = 10;
+
+    for (int i = 0; i < 9; i++) {
+        soma += array[i] * peso--;
+    }
+
+    int resto = soma % 11;
+    int primeiroDigito = (resto < 2) ? 0 : 11 - resto;
+
+    soma = 0;
+    peso = 11;
+    for (int i = 0; i < 10; i++) {
+        soma += array[i] * peso--;
+    }
+
+    resto = soma % 11;
+    int segundoDigito = (resto < 2) ? 0 : 11 - resto;
+
+    if (array[9] == primeiroDigito && array[10] == segundoDigito) {
+        printf("CPF válido!\n");
+    } else {
+        printf("CPF inválido!\n");
+    }
+}
+
+void validarTelefone(struct cliente clientes[], int i) {
+    if (strlen(clientes[i].numTelefone) != TAM_TEL - 1 ||                         
+        clientes[i].numTelefone[0] != '(' ||                              
+        clientes[i].numTelefone[3] != ')' ||                                
+        clientes[i].numTelefone[4] != ' ' ||                   
+        clientes[i].numTelefone[10] != '-' ||                         
+        clientes[i].numTelefone[1] < '1' || clientes[i].numTelefone[1] > '9' || 
+        clientes[i].numTelefone[2] < '0' || clientes[i].numTelefone[2] > '9') {
+        printf("Número de telefone inválido!\n");
+    }
+}
+
+void buscarCPF(struct cliente clientes[], int quantidade) {
+    char cpfBuscado[TAM_CPF];
+    printf("Digite o CPF a ser buscado.\n");
+    scanf("%s", cpfBuscado);
+    getchar();
+    for (int i = 0; i < quantidade; i++) {
+        if (strcmp(clientes[i].cpf, cpfBuscado) == 0) {
+            exibirCliente(clientes[i]);
+            return;
+        }
+    }
+    printf("Usuário não encontrado.\n");
+}
+
+void buscarAniversariante(struct cliente clientes[], int quantidade){
+    printf("Digite o mês para buscar aniversariantes:\n");
+    int mesAniversario;
+    scanf("%d", &mesAniversario);
+    getchar();
+    printf("Aniversários do mês %02d:\n", mesAniversario);
+    for (int i = 0; i < quantidade; i++) {
+        if ((clientes[i].dataNascimento[3] - '0') * 10 + (clientes[i].dataNascimento[4] - '0') == mesAniversario) {
+            printf("%s - %s\n", clientes[i].nome, clientes[i].dataNascimento);
+        }
+    }
+}
+
+void validarEmail(char email[]) {
+    int tamanho = strlen(email);
+
+    if (email[0] == '@') {  // verifica se o primeiro caractere é '@'
+        printf("Email inválido!\n");
+        return;
+    }
+
+    for (int i = 0; i < tamanho; i++) { // validar caracteres
+        if ((email[i] >= 'a' && email[i] <= 'z') || email[i] == '@' || email[i] == '-') {
+            // caractere válido, continua
+            continue;
+        } else {
+            printf("Email inválido!\n");
             return;
         }
     }
 
-    Cliente novo;
-    strcpy(novo.cpf, cpf);
-
-    do {
-        printf("Nome completo: ");
-        fgets(novo.nome, TAM_NOME, stdin);
-        novo.nome[strcspn(novo.nome, "\n")] = '\0';
-        if (!validar_nome(novo.nome)) printf("Nome inválido. Tente novamente.\n");
-    } while (!validar_nome(novo.nome));
-
-    do {
-        printf("Data de nascimento (DD/MM/AAAA): ");
-        fgets(novo.nascimento, TAM_DATA, stdin);
-        novo.nascimento[strcspn(novo.nascimento, "\n")] = '\0';
-        if (!validar_data(novo.nascimento)) printf("Data inválida. Tente novamente.\n");
-    } while (!validar_data(novo.nascimento));
-
-    char tel[TAM_TEL];
-    do {
-        printf("Telefone ((DDD) prefixo-sufixo ou prefixo-sufixo): ");
-        fgets(tel, TAM_TEL, stdin);
-        tel[strcspn(tel, "\n")] = '\0';
-        if (!formatar_telefone(tel, novo.telefone)) printf("Telefone inválido. Tente novamente.\n");
-    } while (!formatar_telefone(tel, novo.telefone));
-
-    do {
-        printf("Email: ");
-        fgets(novo.email, TAM_EMAIL, stdin);
-        novo.email[strcspn(novo.email, "\n")] = '\0';
-        if (!validar_email(novo.email)) printf("Email inválido. Tente novamente.\n");
-    } while (!validar_email(novo.email));
-
-    if (idx >= 0) clientes[idx] = novo;
-    else clientes[(*total)++] = novo;
-
-    printf("Cliente cadastrado/atualizado com sucesso!\n");
-}
-
-// Busca e cadastro via CPF
-void buscar_ou_cadastrar(Cliente *clientes, int *total) {
-    char cpf[TAM_CPF];
-    do {
-        printf("CPF para busca (xxx.xxx.xxx-yy): ");
-        fgets(cpf, TAM_CPF, stdin);
-        cpf[strcspn(cpf, "\n")] = '\0';
-        if (!validar_cpf(cpf)) printf("CPF inválido. Tente novamente.\n");
-    } while (!validar_cpf(cpf));
-
-    int idx = buscar_cliente(clientes, *total, cpf);
-    if (idx < 0) {
-        char resp[4];
-        printf("Cliente não encontrado. Deseja cadastrar? (s/n): ");
-        fgets(resp, sizeof(resp), stdin);
-        if (tolower(resp[0]) == 's') cadastrar_cliente(clientes, total);
-        else printf("Busca cancelada.\n");
-    } else {
-        Cliente *c = &clientes[idx];
-        printf("\n--- Dados do Cliente ---\n");
-        printf("Nome: %s\nCPF: %s\nNascimento: %s\nTelefone: %s\nEmail: %s\n",
-            c->nome, c->cpf, c->nascimento, c->telefone, c->email);
-    }
-}
-
-// Ordenação Bubble Sort por data de aniversário
-void ordenar_aniversariantes(Cliente *clientes, int idxs[], int total) {
-    for (int i = 0; i < total-1; i++) {
-        for (int j = 0; j < total-i-1; j++) {
-            int d1, m1, d2, m2;
-            sscanf(clientes[idxs[j]].nascimento, "%d/%d", &d1, &m1);
-            sscanf(clientes[idxs[j+1]].nascimento, "%d/%d", &d2, &m2);
-            if (m1 > m2 || (m1 == m2 && d1 > d2)) {
-                int tmp = idxs[j];
-                idxs[j] = idxs[j+1];
-                idxs[j+1] = tmp;
+    // Verifica se há '@' e suas condições específicas
+    for (int i = 0; i < tamanho; i++) {
+        if (email[i] == '@') {
+            // Verifica se caractere antes e depois do '@' NÃO são '-'
+            if ((i > 0 && email[i - 1] == '-') || (i < tamanho - 1 && email[i + 1] == '-')) {
+                printf("Email inválido!\n");
+                return;
             }
+            // Verifica se o primeiro ou último caractere não são '-'
+            if (email[0] == '-' || email[tamanho - 1] == '-') {
+                printf("Email inválido!\n");
+                return;
+            }
+            printf("Email válido!\n");
+            return;
         }
     }
+
+    // Se não encontrou '@', email inválido
+    printf("Email inválido!\n");
 }
 
-// Listar aniversariantes do mês
-void listar_aniversariantes(Cliente *clientes, int total) {
-    int mes;
-    printf("Digite o mês para listar aniversariantes (1-12): ");
-    if (scanf("%d", &mes) != 1 || mes < 1 || mes > 12) {
-        printf("Mês inválido.\n");
-        limpar_buffer();
-        return;
-    }
-    limpar_buffer();
-
-    int idxs[MAX_CLIENTES], cnt = 0;
-    for (int i = 0; i < total; i++) {
-        int d, m, a;
-        if (sscanf(clientes[i].nascimento, "%d/%d/%d", &d, &m, &a) == 3 && m == mes) {
-            idxs[cnt++] = i;
-        }
-    }
-    ordenar_aniversariantes(clientes, idxs, cnt);
-
-    printf("\n--- Aniversariantes do mês %d ---\n", mes);
-    if (cnt == 0) printf("Nenhum aniversariante encontrado.\n");
-    else {
-        for (int i = 0; i < cnt; i++) {
-            Cliente *c = &clientes[idxs[i]];
-            printf("Nome: %s | Data: %s | Telefone: %s | Email: %s\n",
-                c->nome, c->nascimento, c->telefone, c->email);
-        }
-    }
+void cadastroClientes(struct cliente clientes[], int *quantidade) {
+    //Nome
+    printf("Digite o nome completo: ");
+    fgets(clientes[*quantidade].nome, TAM_NOME, stdin);
+    clientes[*quantidade].nome[strcspn(clientes[*quantidade].nome, "\n")] = '\0';
+    
+    //Data de Nascimento
+    printf("Digite a data de nascimento (DD/MM/AAAA): ");
+    scanf("%s", clientes[*quantidade].dataNascimento);
+    getchar();
+    
+    //Telefone
+    printf("Digite o número de telefone ( (xx) xxxxx-xxxx ): ");
+    fgets(clientes[*quantidade].numTelefone, TAM_TEL, stdin);
+    clientes[*quantidade].numTelefone[strcspn(clientes[*quantidade].numTelefone, "\n")] = '\0';
+    validarTelefone(clientes, *quantidade);
+    
+    
+    // CPF
+    printf("Digite o CPF (xxx.xxx.xxx-yy): ");
+    scanf("%s", clientes[*quantidade].cpf);
+    validarCPF(clientes[*quantidade].cpf);
+    
+    //Email
+    printf("Digite o email: \n");
+    scanf("%s", clientes[*quantidade].email);
+    validarEmail(clientes [*quantidade].email);
+    
+    //Proxima posição da Array
+    (*quantidade)++;
+    printf("\n---------------------------------\n");
+    printf("--------Dados Fornecidos:--------\n");
+    printf("---------------------------------\n");
 }
 
-// Menu principal
-void menu() {
-    Cliente clientes[MAX_CLIENTES];
-    int total = 0, opc;
-    do {
-        printf("\n--- Sistema de Cadastro de Clientes ---\n");
-        printf("1 - Cadastrar Cliente\n");
-        printf("2 - Buscar Cliente por CPF\n");
-        printf("3 - Listar Aniversariantes por Mês\n");
-        printf("0 - Sair\nOpção: ");
-        if (scanf("%d", &opc) != 1) {
-            printf("Entrada inválida.\n");
-            limpar_buffer();
-            continue;
-        }
-        limpar_buffer();
-        switch (opc) {
-            case 1: cadastrar_cliente(clientes, &total); break;
-            case 2: buscar_ou_cadastrar(clientes, &total); break;
-            case 3: listar_aniversariantes(clientes, total); break;
-            case 0: printf("Saindo...\n"); break;
-            default: printf("Opção inválida.\n");
-        }
-    } while (opc != 0);
+void exibirCliente(struct cliente c) {
+    printf("Nome: %s\n", c.nome);
+    printf("Nascimento: %s\n", c.dataNascimento);
+    printf("Telefone: %s\n", c.numTelefone);
+    printf("CPF: %s\n", c.cpf);
 }
 
 int main() {
-    menu();
-    return 0;
+    struct cliente clientes[MAX_CLIENTES];
+    int escolha;
+    int quantidade = 0;
+
+    printf("--------Bem-vindo!!!--------\n");
+
+    do {
+        printf("\nO que você deseja fazer?\n");
+        printf("1 - Cadastrar cliente\n");
+        printf("2 - Buscar cliente por CPF\n");
+        printf("3 - Buscar aniversariantes do mês\n");
+        printf("0 - Sair\n");
+        scanf("%d", &escolha);
+        getchar();
+
+        switch (escolha) {
+            case 1:
+                while (quantidade < MAX_CLIENTES) {
+                    printf("\n--------Cadastro de Cliente--------\n");
+                    cadastroClientes(clientes, &quantidade);
+                    exibirCliente(clientes[quantidade - 1]);
+
+                    printf("\nDeseja cadastrar outro cliente? (1 - Sim / 0 - Não)\n");
+                    int opcao;
+                    scanf("%d", &opcao);
+                    getchar(); 
+                    if (opcao == 0) break;
+                }
+                break;
+            case 2:
+                buscarCPF(clientes, quantidade);
+                break;
+            case 3:
+                buscarAniversariante(clientes, quantidade);
+                break;
+            case 0:
+                printf("Saindo...\n");
+                break;
+            default:
+                printf("Opção inválida!\n");
+                break;
+        }
+    } while (escolha != 0);
+}#include <stdio.h>
+#include <string.h>
+#define MAX_CLIENTES 1000
+#define TAM_NOME 101
+#define TAM_CPF 15
+#define TAM_DATA 11
+#define TAM_TEL 15
+#define TAM_EMAIL 51
+
+void exibirCliente();
+
+
+struct cliente {
+    char nome[TAM_NOME];
+    char dataNascimento[TAM_DATA];
+    char numTelefone[TAM_TEL];
+    char cpf[TAM_CPF];
+    char email[TAM_EMAIL];
+};
+
+const char *nomesMeses[] = {
+    "", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+};
+
+void validarNome(const char *nome) {
+    int len = strlen(nome);
+    if (len < 4 || len >100){
+        printf("Nome inválido!\n");
+        return 0;
+     int tem_espaco = 0;
+    for(int i = 0; i < len; i++){
+        char espaco = nome[i];
+        if(espaco == ' '){
+            tem_espaco = 1;
+            break;
+        } else{
+            printf("Nome inválido!\n");
+            return 0
+        }
+    }
+    return 1;
+}
+
+void validarCPF(char cpf[]) {
+    int array[11];
+    int j = 0;
+
+    // Transforma os caracteres em dígitos, ignorando pontos/hífens
+    for (int i = 0; cpf[i] != '\0' && j < 11; i++) {
+        if (cpf[i] >= '0' && cpf[i] <= '9') {
+            array[j++] = cpf[i] - '0';
+        }
+    }
+
+    if (j != 11) {
+        printf("CPF inválido!\n");
+        return;
+    }
+
+    int soma = 0;
+    int peso = 10;
+
+    for (int i = 0; i < 9; i++) {
+        soma += array[i] * peso--;
+    }
+
+    int resto = soma % 11;
+    int primeiroDigito = (resto < 2) ? 0 : 11 - resto;
+
+    soma = 0;
+    peso = 11;
+    for (int i = 0; i < 10; i++) {
+        soma += array[i] * peso--;
+    }
+
+    resto = soma % 11;
+    int segundoDigito = (resto < 2) ? 0 : 11 - resto;
+
+    if (array[9] == primeiroDigito && array[10] == segundoDigito) {
+        printf("CPF válido!\n");
+    } else {
+        printf("CPF inválido!\n");
+    }
+}
+
+void validarTelefone(struct cliente clientes[], int i) {
+    if (strlen(clientes[i].numTelefone) != TAM_TEL - 1 ||                         
+        clientes[i].numTelefone[0] != '(' ||                              
+        clientes[i].numTelefone[3] != ')' ||                                
+        clientes[i].numTelefone[4] != ' ' ||                   
+        clientes[i].numTelefone[10] != '-' ||                         
+        clientes[i].numTelefone[1] < '1' || clientes[i].numTelefone[1] > '9' || 
+        clientes[i].numTelefone[2] < '0' || clientes[i].numTelefone[2] > '9') {
+        printf("Número de telefone inválido!\n");
+    }
+}
+
+void buscarCPF(struct cliente clientes[], int quantidade) {
+    char cpfBuscado[TAM_CPF];
+    printf("Digite o CPF a ser buscado.\n");
+    scanf("%s", cpfBuscado);
+    getchar();
+    for (int i = 0; i < quantidade; i++) {
+        if (strcmp(clientes[i].cpf, cpfBuscado) == 0) {
+            exibirCliente(clientes[i]);
+            return;
+        }
+    }
+    printf("Usuário não encontrado.\n");
+}
+
+void buscarAniversariante(struct cliente clientes[], int quantidade){
+    printf("Digite o mês para buscar aniversariantes:\n");
+    int mesAniversario;
+    scanf("%d", &mesAniversario);
+    getchar();
+    printf("Aniversários do mês %02d:\n", mesAniversario);
+    for (int i = 0; i < quantidade; i++) {
+        if ((clientes[i].dataNascimento[3] - '0') * 10 + (clientes[i].dataNascimento[4] - '0') == mesAniversario) {
+            printf("%s - %s\n", clientes[i].nome, clientes[i].dataNascimento);
+        }
+    }
+}
+
+void validarEmail(char email[]) {
+    int tamanho = strlen(email);
+
+    if (email[0] == '@') {  // verifica se o primeiro caractere é '@'
+        printf("Email inválido!\n");
+        return;
+    }
+
+    for (int i = 0; i < tamanho; i++) { // validar caracteres
+        if ((email[i] >= 'a' && email[i] <= 'z') || email[i] == '@' || email[i] == '-') {
+            // caractere válido, continua
+            continue;
+        } else {
+            printf("Email inválido!\n");
+            return;
+        }
+    }
+
+    // Verifica se há '@' e suas condições específicas
+    for (int i = 0; i < tamanho; i++) {
+        if (email[i] == '@') {
+            // Verifica se caractere antes e depois do '@' NÃO são '-'
+            if ((i > 0 && email[i - 1] == '-') || (i < tamanho - 1 && email[i + 1] == '-')) {
+                printf("Email inválido!\n");
+                return;
+            }
+            // Verifica se o primeiro ou último caractere não são '-'
+            if (email[0] == '-' || email[tamanho - 1] == '-') {
+                printf("Email inválido!\n");
+                return;
+            }
+            printf("Email válido!\n");
+            return;
+        }
+    }
+
+    // Se não encontrou '@', email inválido
+    printf("Email inválido!\n");
+}
+
+void cadastroClientes(struct cliente clientes[], int *quantidade) {
+    //Nome
+    printf("Digite o nome completo: ");
+    fgets(clientes[*quantidade].nome, TAM_NOME, stdin);
+    clientes[*quantidade].nome[strcspn(clientes[*quantidade].nome, "\n")] = '\0';
+    validarNome(clientes[*quantidade].nome);
+    
+    //Data de Nascimento
+    printf("Digite a data de nascimento (DD/MM/AAAA): ");
+    scanf("%s", clientes[*quantidade].dataNascimento);
+    getchar();
+    
+    //Telefone
+    printf("Digite o número de telefone ( (xx) xxxxx-xxxx ): ");
+    fgets(clientes[*quantidade].numTelefone, TAM_TEL, stdin);
+    clientes[*quantidade].numTelefone[strcspn(clientes[*quantidade].numTelefone, "\n")] = '\0';
+    validarTelefone(clientes, *quantidade);
+    
+    
+    // CPF
+    printf("Digite o CPF (xxx.xxx.xxx-yy): ");
+    scanf("%s", clientes[*quantidade].cpf);
+    validarCPF(clientes[*quantidade].cpf);
+    
+    //Email
+    printf("Digite o email: \n");
+    scanf("%s", clientes[*quantidade].email);
+    validarEmail(clientes [*quantidade].email);
+    
+    //Proxima posição da Array
+    (*quantidade)++;
+    printf("\n---------------------------------\n");
+    printf("--------Dados Fornecidos:--------\n");
+    printf("---------------------------------\n");
+}
+
+void exibirCliente(struct cliente c) {
+    printf("Nome: %s\n", c.nome);
+    printf("Nascimento: %s\n", c.dataNascimento);
+    printf("Telefone: %s\n", c.numTelefone);
+    printf("CPF: %s\n", c.cpf);
+}
+
+int main() {
+    struct cliente clientes[MAX_CLIENTES];
+    int escolha;
+    int quantidade = 0;
+
+    printf("--------Bem-vindo!!!--------\n");
+
+    do {
+        printf("\nO que você deseja fazer?\n");
+        printf("1 - Cadastrar cliente\n");
+        printf("2 - Buscar cliente por CPF\n");
+        printf("3 - Buscar aniversariantes do mês\n");
+        printf("0 - Sair\n");
+        scanf("%d", &escolha);
+        getchar();
+
+        switch (escolha) {
+            case 1:
+                while (quantidade < MAX_CLIENTES) {
+                    printf("\n--------Cadastro de Cliente--------\n");
+                    cadastroClientes(clientes, &quantidade);
+                    exibirCliente(clientes[quantidade - 1]);
+
+                    printf("\nDeseja cadastrar outro cliente? (1 - Sim / 0 - Não)\n");
+                    int opcao;
+                    scanf("%d", &opcao);
+                    getchar(); 
+                    if (opcao == 0) break;
+                }
+                break;
+            case 2:
+                buscarCPF(clientes, quantidade);
+                break;
+            case 3:
+                buscarAniversariante(clientes, quantidade);
+                break;
+            case 0:
+                printf("Saindo...\n");
+                break;
+            default:
+                printf("Opção inválida!\n");
+                break;
+        }
+    } while (escolha != 0);
 }
