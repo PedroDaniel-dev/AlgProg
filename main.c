@@ -23,10 +23,33 @@ const char *nomesMeses[] = {
     "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
 };
 
-void validarNome() {
-    //int len = strlen(nome);
-    //if (len < 4);
-    
+ void validarNome(const char *nome) {
+     int len = strlen(nome);
+     if (len < 4 || len > 100) {
+        printf("Nome inválido!\n");
+         return;
+     }
+
+     int temEspaco = 0;
+
+    for (int i = 0; i < len; i++) {
+         char c = nome[i];
+         if (!((c >= 'A' && c <= 'Z') ||
+               (c >= 'a' && c <= 'z') ||
+              c == ' ' || c == '-' || c == '\'')) {
+             printf("Nome inválido!\n");
+             return;
+         }
+
+         if (c == ' ') {
+             temEspaco = 1;
+         }
+     }
+
+     if (!temEspaco) {
+         printf("Nome inválido!\n");
+        return;
+    }
 }
 
 void validarCPF(char cpf[]) {
@@ -142,7 +165,7 @@ void validarEmail(char email[]) {
                 return;
             }
             printf("Email válido!\n");
-            return;
+            return ;
         }
     }
 
@@ -155,6 +178,7 @@ void cadastroClientes(struct cliente clientes[], int *quantidade) {
     printf("Digite o nome completo: ");
     fgets(clientes[*quantidade].nome, TAM_NOME, stdin);
     clientes[*quantidade].nome[strcspn(clientes[*quantidade].nome, "\n")] = '\0';
+    validarNome(clientes[*quantidade].nome);
     
     //Data de Nascimento
     printf("Digite a data de nascimento (DD/MM/AAAA): ");
