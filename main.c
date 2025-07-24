@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
+#include <ctype.h>
+
 
 #define MAX_CLIENTES 1000
 #define TAM_NOME 101
@@ -102,47 +105,61 @@ void buscarAniversariante(struct cliente clientes[], int quantidade){
     }
 }
 
-void validarEmail(char email[]) {
+bool validarEmail(char email[]) {
     int tamanho = strlen(email);
+    int posArroba = -1;
 
-    if (email[0] == '@') {  // verifica se o primeiro caractere é '@'
-        printf("Email inválido!\n");
-        return;
+    //Verificação de Comprimento
+    if (tamanho == 0 || tamanho > TAM_EMAIL || tamanho < 3) {
+        printf("Email inválido: Tamanho incorreto (mín. 3, máx. %d caracteres).\n", TAM_EMAIL);
+        return false;
     }
 
-    for (int i = 0; i < tamanho; i++) { // validar caracteres
-        if ((email[i] >= 'a' && email[i] <= 'z') || email[i] == '@' || email[i] == '-') {
-            // caractere válido, continua
-            continue;
-        } else {
-            printf("Email inválido!\n");
-            return;
-        }
-    }
-
-    // Verifica se há '@' e suas condições específicas
+    //Passagem Única: Validar caracteres e encontrar a posição do '@'
     for (int i = 0; i < tamanho; i++) {
-        if (email[i] == '@') {
-            // Verifica se caractere antes e depois do '@' NÃO são '-'
-            if ((i > 0 && email[i - 1] == '-') || (i < tamanho - 1 && email[i + 1] == '-')) {
-                printf("Email inválido!\n");
-                return;
+        char currentChar = email[i];
+
+        //Verifica se o caractere atual é um '@'
+        if (currentChar == '@') {
+            if (posArroba != -1) {
+                printf("Email inválido: Contém mais de um '@'.\n");
+                return false;
             }
-            // Verifica se o primeiro ou último caractere não são '-'
-            if (email[0] == '-' || email[tamanho - 1] == '-') {
-                printf("Email inválido!\n");
-                return;
-            }
-            printf("Email válido!\n");
-            return;
+            posArroba = i;
+        }
+        else if (!(islower(currentChar) || isdigit(currentChar) || currentChar == '-')) {
+            // Se o caractere NÃO for nenhum dos permitidos, então é inválido.
+            printf("Email inválido: Caractere '%c' não permitido (apenas minúsculas, dígitos e hífens).\n", currentChar);
+            return false;
         }
     }
 
-    // Se não encontrou '@', email inválido
-    printf("Email inválido!\n");
+    //Verificações do '@' após a passagem completa do loop
+    if (posArroba == -1) {
+        printf("Email inválido: Não contém '@'.\n");
+        return false;
+    }
+    // verificar se o '@' não está no início ou no fim do email
+    if (posArroba == 0 || posArroba == tamanho - 1) {
+        printf("Email inválido: '@' não pode estar no início ou no fim.\n");
+        return false;
+    }
+    //Validar o <username>
+    if (email[0] == '-' || email[posArroba - 1] == '-') {
+        printf("Email inválido: Nome de usuário não pode começar ou terminar com hífen.\n");
+        return false;
+    }
+    //Validar o <dominio>
+    if (email[posArroba + 1] == '-' || email[tamanho - 1] == '-') {
+        printf("Email inválido: Domínio não pode começar ou terminar com hífen.\n");
+        return false;
+    }
+    // Se todas as verificações passarem, o email é válido
+    return true;
 }
 
 void cadastroClientes(struct cliente clientes[], int *quantidade) {
+    bool emailValido;
     //Nome
     printf("Digite o nome: \n");
     getchar();
@@ -159,11 +176,26 @@ void cadastroClientes(struct cliente clientes[], int *quantidade) {
     // CPF
     printf("Digite o CPF (xxx.xxx.xxx-yy):\n");
     scanf("%s", clientes[*quantidade].cpf);
+
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+
     validarCPF(clientes[*quantidade].cpf);
+
     //Email
-    printf("Digite o email: \n");
-    scanf("%s", clientes[*quantidade].email);
-    validarEmail(clientes [*quantidade].email);
+    do {
+    printf("Email: ");
+    fgets(clientes[*quantidade].email, TAM_EMAIL, stdin);
+    clientes[*quantidade].email[strcspn(clientes[*quantidade].email, "\n")] = 0;
+
+    bool emailValido = validarEmail(clientes[*quantidade].email);
+
+    if (!emailValido) {
+        printf("Email inválido! Por favor, siga o formato <username>@<dominio>!\n");
+        printf("Apenas letras minúsculas, números e hífens (não pode começar/terminar com hífen).\n");
+    }
+} while (!validarEmail(clientes[*quantidade].email));
+
     //Proxima posição da Array
     (*quantidade)++;
     printf("\n---------------------------------\n");
@@ -171,11 +203,13 @@ void cadastroClientes(struct cliente clientes[], int *quantidade) {
     printf("---------------------------------\n");
 }
 
+
 void exibirCliente(struct cliente c) {
     printf("Nome: %s\n", c.nome);
     printf("Nascimento: %s\n", c.dataNascimento);
     printf("Telefone: %s\n", c.numTelefone);
     printf("CPF: %s\n", c.cpf);
+    printf("Email: %s\n", c.email);
 }
 
 int main() {
