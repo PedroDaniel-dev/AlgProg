@@ -50,7 +50,7 @@ bool validarNome(const char *nome) {
     return true;
 }
 
-bool validarCPF(char cpf[], struct cliente clientes[], int quantidade) {
+bool validarCPF(char cpf[], struct cliente clientes[], int quantidade, int *posExistente) {
     int array[11];
     int j = 0;
     
@@ -62,9 +62,11 @@ bool validarCPF(char cpf[], struct cliente clientes[], int quantidade) {
     }
     
     for (int i = 0; i < quantidade; i++) {
-        if (strcmp(clientes[i].cpf, clientes[quantidade].cpf) == 0) {
-            printf("Esse CPF já está cadastrado!\n");
-            return false;
+        if (strcmp(clientes[i].cpf, cpf) == 0) {
+             printf("CPF já cadastrado. Substituindo dados antigos...\n");
+            *posExistente = i;
+            return true;
+            
         }
     }
 
@@ -286,7 +288,8 @@ void limparBuffer() {
 
 void cadastroClientes(struct cliente clientes[], int *quantidade) {
     bool validador = false;
-
+    bool cpfcadastrado = false;
+    int posExistente;
     // CPF
     while (!validador) {
         printf("Digite o CPF (xxx.xxx.xxx-yy): ");
@@ -295,8 +298,8 @@ void cadastroClientes(struct cliente clientes[], int *quantidade) {
             limparBuffer();
         }
         clientes[*quantidade].cpf[strcspn(clientes[*quantidade].cpf, "\n")] = '\0';
-        validador = validarCPF(clientes[*quantidade].cpf, clientes, *quantidade);
-        }
+        validador = validarCPF(clientes[*quantidade].cpf, clientes, *quantidade, &posExistente);
+        
         
     }
 
@@ -326,7 +329,7 @@ void cadastroClientes(struct cliente clientes[], int *quantidade) {
         validador = validarDataNascimento(clientes[*quantidade].dataNascimento);
     }
 
-/*    // Telefone
+    // Telefone
     validador = false;
     while (!validador) {
         printf("Digite o número de telefone ( (xx) xxxxx-xxxx ): ");
@@ -348,11 +351,17 @@ void cadastroClientes(struct cliente clientes[], int *quantidade) {
         }
         clientes[*quantidade].email[strcspn(clientes[*quantidade].email, "\n")] = '\0';
         validador = validarEmail(clientes[*quantidade].email);
-    } */
+    } 
 
     // Incrementa quantidade de clientes cadastrados
+    if (cpfcadastrado == true) {
+        clientes[posExistente] = clientes[*quantidade];
+        exibirCliente(clientes[posExistente]);
+    } else {
     (*quantidade)++;
-
+    exibirCliente(clientes[*quantidade - 1]);
+    }
+    
     printf("\n---------------------------------\n");
     printf("--------Dados Fornecidos:--------\n");
     printf("---------------------------------\n");
@@ -387,7 +396,6 @@ int main() {
                 while (quantidade < MAX_CLIENTES) {
                     printf("\n--------Cadastro de Cliente--------\n");
                     cadastroClientes(clientes, &quantidade);
-                    exibirCliente(clientes[quantidade - 1]);
 
                     printf("\nDeseja cadastrar outro cliente? (1 - Sim / 0 - Não)\n");
                     int opcao;
