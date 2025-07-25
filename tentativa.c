@@ -55,6 +55,40 @@ bool validarNome(const char *nome) {
     return true;
 }
 
+bool validarDataNascimento(const char *data) {
+    if (strlen(data) != 10 || data[2] != '/' || data[5] != '/') {
+        printf("Data de nascimento inválida!\n");
+        return false;
+    }
+
+    int dia, mes, ano;
+
+    dia = (data[0] - '0') * 10 + (data[1] - '0');
+
+    mes = (data[3] - '0') * 10 + (data[4] - '0');
+
+    ano = (data[6] - '0') * 1000 + (data[7] - '0') * 100 + (data[8] - '0') * 10 + (data[9] - '0');
+
+    if (mes < 1 || mes > 12 || dia < 1 || dia > 31) {
+        printf("Data de nascimento inválida!\n");
+        return false;
+    }
+
+    if ((mes == 4 || mes == 6 || mes == 9 || mes == 11) && dia > 30) {
+        printf("Data de nascimento inválida!\n");
+        return false;
+    }
+    if (mes == 2) {
+        bool bissexto = (ano % 4 == 0 && ano % 100 != 0) || (ano % 400 == 0);
+        if ((bissexto && dia > 29) || (!bissexto && dia > 28)) {
+            printf("Data de nascimento inválida!\n");
+            return false;
+        }
+    }
+
+    return true;
+}
+
 bool validarCPF(char cpf[]) {
     int array[11];
     int j = 0;
@@ -204,12 +238,12 @@ void cadastroClientes(struct cliente clientes[], int *quantidade) {
     
     //Data de Nascimento
     validador = false;
- //   while (!validador) {
+    while (!validador) {
     printf("Digite a data de nascimento (DD/MM/AAAA): ");
     scanf("%s", clientes[*quantidade].dataNascimento);
     getchar();
-//    validador = validardataNascimento(clientes[*quantidade].dataNascimento);
- //   }
+    validador = validarDataNascimento(clientes[*quantidade].dataNascimento);
+    }
     
     //Telefone
     validador = false;
