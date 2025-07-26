@@ -83,7 +83,12 @@ bool validarCPF(char cpf[], struct cliente clientes[], int quantidade, int *posE
     }
 
     int resto = soma % 11;
-    int primeiroDigito = (resto < 2) ? 0 : 11 - resto;
+    int primeiroDigito; 
+    if (resto < 2) {
+        primeiroDigito = 0;
+    } else {
+        primeiroDigito = 11 - resto;
+    }
 
     soma = 0;
     peso = 11;
@@ -108,6 +113,20 @@ bool validarCPF(char cpf[], struct cliente clientes[], int quantidade, int *posE
 }
 
 bool validarTelefone(struct cliente clientes[], int i) {
+    if (strlen(clientes[i].numTelefone) == 10) {  // Exemplo: "96575-1234"
+        char ddd[] = "(21) ";
+        char telefone[TAM_TEL]; // temporária para armazenar o resultado
+
+        strcpy(telefone, ddd); // copia "(21) " para telefone
+        strcat(telefone, clientes[i].numTelefone); // concatena o número existente
+
+        strcpy(clientes[i].numTelefone, telefone); // salva no campo original
+
+        printf("DDD não informado. Considerando DDD (21)...\n");
+    }
+
+
+    
     if (strlen(clientes[i].numTelefone) != TAM_TEL - 1 ||                         
         clientes[i].numTelefone[0] != '(' ||                              
         clientes[i].numTelefone[3] != ')' ||                                
@@ -132,26 +151,25 @@ void buscarCPF(struct cliente clientes[], int quantidade) {
             return;
         }
     }
-    printf("Usuário não encontrado.\n");
+    printf("\nUsuário não encontrado.\n");
 
 }
 
-
-void selectionSort(struct cliente aniversariantes[], int qtdAniversariantes) {
+void ordenar(struct cliente aniversariantes[], int qtdAniversariantes) {
     for (int i = 0; i < qtdAniversariantes - 1; i++) {    // selection sort por dia do aniversário
-        int menor_dia = i;
+        int menorDia = i;
         for (int j = i + 1; j < qtdAniversariantes; j++) {  //
-            int dia_j = (aniversariantes[j].dataNascimento[0] - '0') * 10 + (aniversariantes[j].dataNascimento[1] - '0');   //armazena o dia do aniversário do cliente no for j
-            int dia_minimo = (aniversariantes[menor_dia].dataNascimento[0] - '0') * 10 + (aniversariantes[menor_dia].dataNascimento[1] - '0');  //armazena o dia do aniversário do cliente menor_dia
-            if (dia_j < dia_minimo) {   //compara os dois
-                menor_dia = j;
+            int diaJ = (aniversariantes[j].dataNascimento[0] - '0') * 10 + (aniversariantes[j].dataNascimento[1] - '0');   //armazena o dia do aniversário do cliente no for j
+            int diaMinimo = (aniversariantes[menorDia].dataNascimento[0] - '0') * 10 + (aniversariantes[menorDia].dataNascimento[1] - '0');  //armazena o dia do aniversário do cliente menorDia
+            if (diaJ < diaMinimo) {   //compara os dois
+                menorDia = j;
             }
         }
-        if (menor_dia != i) {   // se encontrar um menor dia, troca os clientes
+        if (menorDia != i) {   // se encontrar um menor dia, troca os clientes
                                // e depois troca os aniversariantes
             struct cliente temp = aniversariantes[i];
-            aniversariantes[i] = aniversariantes[menor_dia];
-            aniversariantes[menor_dia] = temp;
+            aniversariantes[i] = aniversariantes[menorDia];
+            aniversariantes[menorDia] = temp;
         }
     }
 }
@@ -172,7 +190,6 @@ void buscarAniversariante(struct cliente clientes[], int quantidade){
     
     struct cliente aniversariantes[MAX_CLIENTES];   //array temporário para armazenar aniversariantes
     int qtdAniversariantes = 0;
-    
 
     // Descobre o número do mês
     for(int i = 1; i <= 12; i++) {
@@ -187,7 +204,7 @@ void buscarAniversariante(struct cliente clientes[], int quantidade){
         return;
     }
 
-    printf("Aniversários do mês de %s:\n", nomeMeses[mesAniversario]);
+    printf("\n-------Aniversários do mês de %s-------\n", nomeMeses[mesAniversario]);
 
     for (int i = 0; i < quantidade; i++) {
         if ((clientes[i].dataNascimento[3] - '0') * 10 + (clientes[i].dataNascimento[4] - '0') == mesAniversario) {
@@ -195,7 +212,7 @@ void buscarAniversariante(struct cliente clientes[], int quantidade){
         }
     }
     
-    selectionSort(aniversariantes, qtdAniversariantes);
+    ordenar(aniversariantes, qtdAniversariantes);
     
     for (int i = 0; i < qtdAniversariantes; i++) {
         printf("%s - %s\n", aniversariantes[i].nome, aniversariantes[i].dataNascimento);
@@ -203,11 +220,11 @@ void buscarAniversariante(struct cliente clientes[], int quantidade){
 }
 
 bool validarEmail(char email[]) {
+    int encontrarArroba = 0;    
     int tamanho = strlen(email);
 
-    if ((email[0] == '@' && email[tamanho - 1] == '@') &&
-        (email[0] == '-' && email[tamanho - 1] == '-') &&
-        (email[0] == '.' && email[tamanho - 1] == '.')){  // verifica se o primeiro caractere é '@'
+    if ((email[0] == '@' || email[tamanho - 1] == '@') ||
+        (email[0] == '-' || email[tamanho - 1] == '-')){  // verifica se o primeiro caractere é '@'
         printf("Email inválido!\n");
         return false;
     }
@@ -217,7 +234,7 @@ bool validarEmail(char email[]) {
             // caractere válido, continua
             continue;
         } else {
-            printf("Email inválido!\n");
+            printf("Email inválido! Utilize caracteres válidos.\n");
             return false;
         }
     }
@@ -225,6 +242,7 @@ bool validarEmail(char email[]) {
     // Verifica se há '@' e suas condições específicas
     for (int i = 0; i < tamanho; i++) {
         if (email[i] == '@') {
+            encontrarArroba += 1;
             // Verifica se caractere antes e depois do '@' NÃO são '-'
             if ((i > 0 && email[i - 1] == '-') || (i < tamanho - 1 && email[i + 1] == '-')) {
                 printf("Email inválido!\n");
@@ -235,13 +253,15 @@ bool validarEmail(char email[]) {
                 printf("Email inválido!\n");
                 return false;
             }
-            return true;
         }
     }
-
-    // Se não encontrou '@', email inválido
-    printf("Email inválido!\n");
-    return false;
+    
+    if(encontrarArroba != 1) {
+        printf("Email inválido!\n"); 
+        return false; // Se não encontrou '@', email inválido
+    }else { 
+        return true;
+    }
 }
 
 bool validarDataNascimento(const char *data) {
@@ -278,21 +298,18 @@ bool validarDataNascimento(const char *data) {
     return true;
 }
 
-
 void limparBuffer() {
     int c;
     while ((c = getchar()) != '\n' && c != EOF) {
-        // descarta o restante da linha
     }
 }
 
 void cadastroClientes(struct cliente clientes[], int *quantidade) {
     bool validador = false;
-    bool cpfcadastrado = false;
     int posExistente;
     // CPF
     while (!validador) {
-        printf("Digite o CPF (xxx.xxx.xxx-yy): ");
+        printf("Digite o CPF (ABC.DEF.GHI-JK): ");
         fgets(clientes[*quantidade].cpf, TAM_CPF, stdin);
         if (clientes[*quantidade].cpf[strlen(clientes[*quantidade].cpf) - 1] != '\n') {
             limparBuffer();
@@ -306,7 +323,7 @@ void cadastroClientes(struct cliente clientes[], int *quantidade) {
     // Nome
     validador = false;
     while (!validador) {
-        printf("Digite o nome completo: ");
+        printf("Digite o Nome Completo: ");
         fgets(clientes[*quantidade].nome, TAM_NOME, stdin);
 
         // Se não tiver o '\n', limpar buffer
@@ -332,7 +349,7 @@ void cadastroClientes(struct cliente clientes[], int *quantidade) {
     // Telefone
     validador = false;
     while (!validador) {
-        printf("Digite o número de telefone ( (xx) xxxxx-xxxx ): ");
+        printf("Digite o número de telefone (xx) xxxxx-xxxx: ");
         fgets(clientes[*quantidade].numTelefone, TAM_TEL, stdin);
         if (clientes[*quantidade].numTelefone[strlen(clientes[*quantidade].numTelefone) - 1] != '\n') {
             limparBuffer();
@@ -353,18 +370,15 @@ void cadastroClientes(struct cliente clientes[], int *quantidade) {
         validador = validarEmail(clientes[*quantidade].email);
     } 
 
-    // Incrementa quantidade de clientes cadastrados
-    if (cpfcadastrado == true) {
+    printf("\n---------------------------------\n--------Dados Fornecidos:--------\n---------------------------------\n");
+
+    if (posExistente != *quantidade) {
         clientes[posExistente] = clientes[*quantidade];
         exibirCliente(clientes[posExistente]);
     } else {
-    (*quantidade)++;
-    exibirCliente(clientes[*quantidade - 1]);
+    (*quantidade)++; // Incrementa quantidade de clientes cadastrados
+    exibirCliente(clientes[*quantidade - 1]); 
     }
-    
-    printf("\n---------------------------------\n");
-    printf("--------Dados Fornecidos:--------\n");
-    printf("---------------------------------\n");
 }
 
 void exibirCliente(struct cliente c) {
@@ -393,17 +407,13 @@ int main() {
 
         switch (escolha) {
             case 1:
-                while (quantidade < MAX_CLIENTES) {
-                    printf("\n--------Cadastro de Cliente--------\n");
-                    cadastroClientes(clientes, &quantidade);
-
-                    printf("\nDeseja cadastrar outro cliente? (1 - Sim / 0 - Não)\n");
-                    int opcao;
-                    scanf("%d", &opcao);
-                    getchar(); 
-                    if (opcao == 0) break;
-                }
-                break;
+                    if (quantidade < MAX_CLIENTES) {
+                        printf("\n--------Cadastro de Cliente--------\n");
+                        cadastroClientes(clientes, &quantidade);
+                    } else {
+                        printf("Limite máximo de clientes atingido!\n");
+                    }
+                    break;
             case 2: buscarCPF(clientes, quantidade); break;
             case 3: buscarAniversariante(clientes, quantidade); break;
             case 0: printf("Saindo...\n"); break;
